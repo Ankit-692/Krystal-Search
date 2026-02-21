@@ -1,0 +1,89 @@
+:root {
+    --bg-dark: #0a0a0a;
+    --item-bg: #111111;
+    --accent: #38bdf8; /* Krystal Blue */
+    --border: rgba(255, 255, 255, 0.05);
+    --text-p: #ffffff;
+    --text-s: #666666;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-dark);
+    color: var(--text-p);
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow: hidden;
+}
+
+#app {
+    height: 100vh;
+    padding: 40px 60px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* Premium Search Bar - Minimal line style */
+#search {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    outline: none;
+    color: var(--text-p);
+    font-size: 2.2rem;
+    font-weight: 200;
+    padding-bottom: 20px;
+    margin-bottom: 40px;
+    letter-spacing: -0.5px;
+    transition: border-color 0.3s ease;
+}
+
+#search:focus {
+    border-bottom: 1px solid var(--accent);
+}
+
+#search::placeholder {
+    color: #333;
+}
+
+/* Results Area */
+#results {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Premium Result Item */
+.result-item {
+    padding: 16px 20px;
+    background: var(--item-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.result-item:hover {
+    background: #161616;
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(4px);
+}
+
+.result-title {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-p);
+}
+
+.result-desc {
+    font-size: 0.85rem;
+    color: var(--text-s);
+    margin-top: 4px;
+}
+
+/* Hide scrollbar */
+#results::-webkit-scrollbar { width: 0; }
