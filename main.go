@@ -26,7 +26,7 @@ func main() {
 		},
 		Frameless:        true,
 		AlwaysOnTop:      true,
-		BackgroundColour: &options.RGBA{R: 10, G: 10, B: 10, A: 255},
+		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId:               "krystal-search-unique-id",
 			OnSecondInstanceLaunch: app.OnSecondInstance,

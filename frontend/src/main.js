@@ -25,13 +25,14 @@ input.addEventListener('input', async (e) => {
 });
 
 resultsArea.addEventListener('click', (e) => {
-  const item = e.target.closest('.result-item');
-  if (item) {
-    const path = item.getAttribute('data-path');
-    const title = item.getAttribute('data-title');
-    window.go.main.App.Launch({ Title: title, Path: path });
-  }
+  LaunchApp(e);  
 });
+
+input.addEventListener('keydown',(e)=>{
+  if(e.key === 'Enter'){
+    LaunchApp(e);
+  }
+})
 
 window.runtime.EventsOn("focus_search", () => {
   input.focus();
@@ -49,4 +50,11 @@ window.onblur = () => {
   window.runtime.WindowHide();
 };
 
-
+function LaunchApp(e){
+const item = e.target.closest('.result-item');
+  if (item) {
+    const path = item.getAttribute('data-path');
+    const title = item.getAttribute('data-title');
+    window.go.main.App.Launch({ Title: title, Path: path });
+  }
+}
