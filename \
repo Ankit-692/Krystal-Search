@@ -1,0 +1,88 @@
+// Package services
+package utility
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+// Icon sizes to probe: 128x128 for the active theme, scalable as SVG fallback
+var iconSizes = []string{"128x128", "scalable"}
+
+// Icon categories to probe
+var iconCategories = []string{"apps", "applications"}
+
+func getCurrentIconTheme() string {
+	out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output()
+	if err != nil {
+		return "hicolor"
+	}
+
+	return strings.Trim(strings.TrimSpace(string(out)), "'")
+}
+
+func ResolveIcon(iconName) string {
+	theme := getCurrentIconTheme()
+	if iconName == "" {
+		return ""
+	}
+
+	// If the Icon field is already an absolute path, use it directly.
+	if filepath.IsAbs(iconName) {
+		if _, err := os.Stat(iconName); err == nil {
+			return iconName
+		}
+		return ""
+	}
+
+	// Base directories where icon themes live.
+	iconBaseDirs := []string{
+		filepath.Join(os.Getenv("HOME"), ".local/share/icons"),
+		"/usr/local/share/icons",
+		"/usr/share/icons",
+	}
+
+	// Search strategy:
+	// 1. Active theme  @ 128x128 → .png, .svg, .xpm
+	// 2. hicolor       @ 128x128 → .png, .svg, .xpm
+	// 3. Active theme  @ scalable → .svg
+	// 4. hicolor       @ scalable → .svg
+	type probe struct {
+		theme string
+		size  string
+		exts  []string
+	}
+
+	probes := []probe{
+		{theme, "128x128", []string{".png", ".svg", ".xpm"}},
+		{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
+		{theme, "scalable", []string{".svg"}},
+		{"hicolor", "scalable", []string{".svg"}},
+	}
+
+	// Deduplicate when the active theme is already hicolor.
+	if theme == "hicolor" {
+		probes = []probe{
+			{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
+			{"hicolor", "scalable", []string{".svg"}},
+		}
+	}
+
+	for _, p := range probes {
+		for _, base := range iconBaseDirs {
+			for _, cat := range iconCategories {
+				dir := filepath.Join(base, p.theme, p.size, cat)
+				for _, ext := range p.exts {
+					candidate := filepath.Join(dir, iconName+ext)
+					if _, err := os.Stat(candidate); err == nil {
+						return candidate
+					}
+				}
+			}
+		}
+	}
+
+	return ""
+}
