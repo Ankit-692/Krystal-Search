@@ -22,27 +22,49 @@ function setSelected(index) {
   items[selectedIndex].scrollIntoView({ block: 'nearest' });
 }
 
+let debounceTimer = null;
+
 input.addEventListener('input', async (e) => {
   const query = e.target.value.trim();
-  if (query.length < 2) {
+  console.log("input fired, query:", query);
+
+  if (query.length <= 2) {
     resultsArea.innerHTML = '';
     selectedIndex = -1;
     return;
   }
-  try {
-    const results = await window.go.main.App.Search(query);
-    resultsArea.innerHTML = results.map((item) => `
-      <div class="result-item" data-path="${item.Path}" data-title="${item.Title}">
-        <div class="result-icon"><img src="${item.Icon}"/></div>
-        <div class="result-title">${item.Title}</div>
-        <div class="result-desc">${item.Path}</div>
-      </div>
-    `).join('');
-    selectedIndex = -1;
-  } catch (err) {
-    console.error(err);
-  }
+
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(async () => {
+    try {
+      if (query.startsWith("f:")) {
+        var trimmerQuery = query.slice(2).trim();
+        const results = await window.go.main.App.FileSearch(trimmerQuery);
+        resultsArea.innerHTML = results.map((item) => `
+          <div class="result-item" data-path="${item.Path}" data-title="${item.Name}">
+            <div class="result-icon"><img src="${item.Icon}"/></div>
+            <div class="result-title">${item.Name}</div>
+            <div class="result-desc">${item.Path}</div>
+          </div>
+        `).join('');
+        selectedIndex = -1;
+      } else {
+        const results = await window.go.main.App.Search(query);
+        resultsArea.innerHTML = results.map((item) => `
+          <div class="result-item" data-path="${item.Path}" data-title="${item.Title}">
+            <div class="result-icon"><img src="${item.Icon}"/></div>
+            <div class="result-title">${item.Title}</div>
+            <div class="result-desc">${item.Path}</div>
+          </div>
+        `).join('');
+        selectedIndex = -1;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, 200);
 });
+
 
 resultsArea.addEventListener('click', (e) => {
   const item = e.target.closest('.result-item');

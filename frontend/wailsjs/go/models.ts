@@ -1,5 +1,23 @@
 export namespace models {
 	
+	export class FileEntry {
+	    Name: string;
+	    Path: string;
+	    IsDir: boolean;
+	    Icon: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new FileEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Path = source["Path"];
+	        this.IsDir = source["IsDir"];
+	        this.Icon = source["Icon"];
+	    }
+	}
 	export class SearchResult {
 	    Title: string;
 	    Path: string;

@@ -48,6 +48,11 @@ func (a *App) Search(query string) []models.SearchResult {
 	return result
 }
 
+func (a *App) FileSearch(query string) []models.FileEntry {
+	result := services.FileSearch(query)
+	return result
+}
+
 func (a *App) Launch(item models.SearchResult) {
 	services.Launch(item)
 }

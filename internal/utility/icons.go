@@ -59,6 +59,10 @@ func ResolveIcon(iconName string) string {
 		}
 	}
 
+	if iconName == "folder" {
+		iconCategories = []string{"places"}
+	}
+
 	for _, p := range probes {
 		for _, base := range iconBaseDirs {
 			for _, cat := range iconCategories {
@@ -74,6 +78,9 @@ func ResolveIcon(iconName string) string {
 	}
 
 	return ""
+}
+
+func ResolveFolderIcon() {
 }
 
 func IconToDataURL(iconPath string) string {

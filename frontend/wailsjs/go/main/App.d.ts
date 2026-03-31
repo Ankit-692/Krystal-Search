@@ -3,6 +3,8 @@
 import {models} from '../models';
 import {options} from '../models';
 
+export function FileSearch(arg1:string):Promise<Array<models.FileEntry>>;
+
 export function Launch(arg1:models.SearchResult):Promise<void>;
 
 export function OnSecondInstance(arg1:options.SecondInstanceData):Promise<void>;
