@@ -11,6 +11,27 @@ import (
 
 var iconCategories = []string{"apps", "applications"}
 
+var iconBaseDirs = []string{
+	filepath.Join(os.Getenv("HOME"), ".local/share/icons"),
+	"/usr/local/share/icons",
+	"/usr/share/icons",
+}
+
+type probe struct {
+	theme string
+	size  string
+	exts  []string
+}
+
+var theme = getCurrentIconTheme()
+
+var probes = []probe{
+	{theme, "128x128", []string{".png", ".svg", ".xpm"}},
+	{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
+	{theme, "scalable", []string{".svg"}},
+	{"hicolor", "scalable", []string{".svg"}},
+}
+
 func getCurrentIconTheme() string {
 	out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output()
 	if err != nil {
@@ -21,7 +42,6 @@ func getCurrentIconTheme() string {
 }
 
 func ResolveIcon(iconName string) string {
-	theme := getCurrentIconTheme()
 	if iconName == "" {
 		return ""
 	}
@@ -31,25 +51,6 @@ func ResolveIcon(iconName string) string {
 			return iconName
 		}
 		return ""
-	}
-
-	iconBaseDirs := []string{
-		filepath.Join(os.Getenv("HOME"), ".local/share/icons"),
-		"/usr/local/share/icons",
-		"/usr/share/icons",
-	}
-
-	type probe struct {
-		theme string
-		size  string
-		exts  []string
-	}
-
-	probes := []probe{
-		{theme, "128x128", []string{".png", ".svg", ".xpm"}},
-		{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
-		{theme, "scalable", []string{".svg"}},
-		{"hicolor", "scalable", []string{".svg"}},
 	}
 
 	if theme == "hicolor" {
@@ -80,7 +81,19 @@ func ResolveIcon(iconName string) string {
 	return ""
 }
 
-func ResolveFolderIcon() {
+func ResolveFileIcon(mimetype string) string {
+	for _, p := range probes {
+		for _, base := range iconBaseDirs {
+			dir := filepath.Join(base, p.theme, p.size, "mimetypes")
+			for _, ext := range p.exts {
+				candidate := filepath.Join(dir, mimetype+ext)
+				if _, err := os.Stat(candidate); err == nil {
+					return candidate
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func IconToDataURL(iconPath string) string {

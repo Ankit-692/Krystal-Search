@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"mime"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,12 +66,17 @@ func FileSearch(query string) []models.FileEntry {
 		if err != nil {
 			continue
 		}
-		iconType := map[bool]string{true: "folder", false: ""}[info.IsDir()]
+		mimeType := strings.ReplaceAll(mime.TypeByExtension(filepath.Ext(base)), "/", "-")
+		iconType := map[bool]string{true: "folder", false: mimeType}[info.IsDir()]
+		if iconType != "folder" {
+			iconType = utility.ResolveFileIcon(mimeType)
+		}
+		iconPath := utility.ResolveIcon(iconType)
 		results = append(results, models.FileEntry{
 			Name:  filepath.Base(path),
 			Path:  path,
 			IsDir: info.IsDir(),
-			Icon:  utility.IconToDataURL(utility.ResolveIcon(iconType)),
+			Icon:  utility.IconToDataURL(iconPath),
 		})
 	}
 
