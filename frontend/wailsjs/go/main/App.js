@@ -14,6 +14,10 @@ export function OnSecondInstance(arg1) {
   return window['go']['main']['App']['OnSecondInstance'](arg1);
 }
 
+export function RunCommand(arg1, arg2) {
+  return window['go']['main']['App']['RunCommand'](arg1, arg2);
+}
+
 export function Search(arg1) {
   return window['go']['main']['App']['Search'](arg1);
 }

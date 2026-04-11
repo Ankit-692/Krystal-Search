@@ -26,7 +26,6 @@ let debounceTimer = null;
 
 input.addEventListener('input', async (e) => {
   const query = e.target.value.trim();
-  console.log("input fired, query:", query);
 
   if (query.length <= 2) {
     resultsArea.innerHTML = '';
@@ -48,6 +47,11 @@ input.addEventListener('input', async (e) => {
           </div>
         `).join('');
         selectedIndex = -1;
+      } else if (query.startsWith("t:")) {
+        resultsArea.innerHTML = `
+          <div class="terminal-block">
+            <div class="terminal-output">Press Enter to Run....</div>
+          </div>`;
       } else {
         const results = await window.go.main.App.Search(query);
         resultsArea.innerHTML = results.map((item) => `
@@ -71,7 +75,7 @@ resultsArea.addEventListener('click', (e) => {
   if (item) LaunchApp(item);
 });
 
-input.addEventListener('keydown', (e) => {
+input.addEventListener('keydown', async (e) => {
   const items = getItems();
 
   if (e.key === 'ArrowDown') {
@@ -85,6 +89,21 @@ input.addEventListener('keydown', (e) => {
     setSelected(selectedIndex <= 0 ? 0 : selectedIndex - 1);
 
   } else if (e.key === 'Enter') {
+    if (!items.length) {
+      var query = input.value.trim();
+      if (query.startsWith("t:")) {
+        var trimmedQuery = query.slice(2).trim();
+        if (!trimmedQuery) return;
+
+        if (trimmedQuery.startsWith("sudo")) {
+          showPasswordPrompt(trimmedQuery);
+        }
+        else {
+          await runCommand(trimmedQuery);
+        }
+      }
+      return;
+    }
     const target = selectedIndex >= 0
       ? items[selectedIndex]
       : resultsArea.firstElementChild;
@@ -103,14 +122,64 @@ function LaunchApp(item) {
     const title = item.getAttribute('data-title');
     window.go.main.App.Launch({ Title: title, Path: path });
   }
-}// window.addEventListener('keydown', (e) => {
-//   if (e.key === 'Escape') {
-//     window.runtime.WindowHide();
-//   }
-// });
-//
-// window.onblur = () => {
-//   window.runtime.WindowHide();
-// };
-//
+}
 
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    window.runtime.WindowHide();
+    input.innerHTML = '';
+    resultsArea.innerHTML = '';
+  }
+});
+
+window.onblur = () => {
+  window.runtime.WindowHide();
+  input.innerHTML = '';
+  resultsArea.innerHTML = '';
+};
+
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+async function runCommand(trimmedQuery, password = "") {
+  try {
+    const output = await window.go.main.App.RunCommand(trimmedQuery, password);
+    resultsArea.innerHTML = `
+      <div class="terminal-block">
+        <div class="terminal-prompt">$ ${trimmedQuery}</div>
+        <pre class="terminal-output">${escapeHtml(output) || '(no output)'}</pre>
+      </div>
+    `;
+  } catch (err) {
+    resultsArea.innerHTML = `<div class="terminal-output terminal-error">Error: ${err}</div>`;
+  }
+}
+
+function showPasswordPrompt(command) {
+  resultsArea.innerHTML = `
+    <div class="terminal-block">
+      <div class="terminal-prompt">$ ${command}</div>
+      <div class="sudo-row">
+        <span class="terminal-prompt">[sudo] password:</span>
+        <input id="sudo-input" type="password" autocomplete="off" spellcheck="false" />
+      </div>
+    </div>
+  `;
+
+  const sudoInput = document.getElementById('sudo-input');
+  sudoInput.focus();
+
+  sudoInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      const password = sudoInput.value;
+      sudoInput.disabled = true;
+      await runCommand(command, password);
+    }
+  });
+}

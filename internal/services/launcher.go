@@ -20,3 +20,17 @@ func Launch(item models.SearchResult) {
 		_ = cmd.Start()
 	}()
 }
+
+func RunCommand(command string, password string) string {
+	var cmd *exec.Cmd
+	if password != "" {
+		cmd = exec.Command("sh", "-c", "echo '"+password+"' | sudo -S "+command+" 2>&1")
+	} else {
+		cmd = exec.Command("sh", "-c", command+" 2>&1")
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out) + "\nError: " + err.Error()
+	}
+	return string(out)
+}

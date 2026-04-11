@@ -11,7 +11,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// App struct
 type App struct {
 	ctx      context.Context
 	visible  bool
@@ -37,9 +36,9 @@ func (a *App) startup(ctx context.Context) {
 	if err != nil {
 		println(err.Error())
 	}
-	// runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
-	// 	runtime.WindowHide(a.ctx)
-	// })
+	runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
+		runtime.WindowHide(a.ctx)
+	})
 }
 
 func (a *App) Search(query string) []models.SearchResult {
@@ -55,6 +54,10 @@ func (a *App) FileSearch(query string) []models.FileEntry {
 
 func (a *App) Launch(item models.SearchResult) {
 	services.Launch(item)
+}
+
+func (a *App) RunCommand(command string, password string) string {
+	return services.RunCommand(command, password)
 }
 
 func (a *App) OnSecondInstance(secondInstanceData options.SecondInstanceData) {
