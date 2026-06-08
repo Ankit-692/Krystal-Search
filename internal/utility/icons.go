@@ -46,24 +46,49 @@ func ResolveIcon(iconName string) string {
 		return ""
 	}
 
-	if filepath.IsAbs(iconName) {
-		if _, err := os.Stat(iconName); err == nil {
-			return iconName
+	for _, p := range probes {
+		for _, base := range iconBaseDirs {
+			for _, cat := range iconCategories {
+				dir := filepath.Join(base, p.theme, p.size, cat)
+				for _, ext := range p.exts {
+					candidate := filepath.Join(dir, iconName+ext)
+					if _, err := os.Stat(candidate); err == nil {
+						return candidate
+					}
+				}
+			}
 		}
-		return ""
 	}
 
-	if theme == "hicolor" {
-		probes = []probe{
-			{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
-			{"hicolor", "scalable", []string{".svg"}},
+	// If not found in standard directories, try to resolve from XDG icon cache
+	xdgIconCacheDir := "/var/lib/icons"
+	for _, p := range probes {
+		dir := filepath.Join(xdgIconCacheDir, "hicolor", p.size, "apps")
+		for _, ext := range p.exts {
+			candidate := filepath.Join(dir, iconName+ext)
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
 		}
 	}
 
-	if iconName == "folder" {
-		iconCategories = []string{"places"}
+	// Fallback to default icon if all else fails
+	defaultIconsDir := "/usr/share/icons/hicolor"
+	for _, p := range probes {
+		dir := filepath.Join(defaultIconsDir, p.size, "apps")
+		for _, ext := range p.exts {
+			candidate := filepath.Join(dir, iconName+ext)
+			if _, err := os.Stat(candidate); err == nil {
+				return candidate
+			}
+		}
 	}
 
+	return ""
+}
+
+func ResolveFolderIcon(iconName string) string {
+	iconCategories = []string{"places"}
 	for _, p := range probes {
 		for _, base := range iconBaseDirs {
 			for _, cat := range iconCategories {

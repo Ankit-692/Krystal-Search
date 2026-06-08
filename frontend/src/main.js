@@ -132,11 +132,11 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-window.onblur = () => {
-  window.runtime.WindowHide();
-  input.innerHTML = '';
-  resultsArea.innerHTML = '';
-};
+// window.onblur = () => {
+//   window.runtime.WindowHide();
+//   input.innerHTML = '';
+//   resultsArea.innerHTML = '';
+// };
 
 
 function escapeHtml(str) {

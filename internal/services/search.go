@@ -71,7 +71,7 @@ func FileSearch(query string) []models.FileEntry {
 		if iconType != "folder" {
 			iconType = utility.ResolveFileIcon(mimeType)
 		}
-		iconPath := utility.ResolveIcon(iconType)
+		iconPath := utility.ResolveFolderIcon(iconType)
 		results = append(results, models.FileEntry{
 			Name:  filepath.Base(path),
 			Path:  path,

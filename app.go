@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"strings"
 
 	"changeme/internal/models"
@@ -15,6 +16,7 @@ type App struct {
 	ctx      context.Context
 	visible  bool
 	AppCache []models.SearchResult
+	watcher  *services.WatcherService
 }
 
 func NewApp() *App {
@@ -30,15 +32,44 @@ func (a *App) loadCache() error {
 	return nil
 }
 
+func (a *App) rebuildCache() {
+	log.Println("[app] rebuilding cache...")
+	a.AppCache = services.BuildCache()
+	runtime.EventsEmit(a.ctx, "cache:updated")
+}
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	err := a.loadCache()
 	if err != nil {
 		println(err.Error())
 	}
-	runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
-		runtime.WindowHide(a.ctx)
-	})
+
+	ws, err := services.NewWatcherService()
+	if err != nil {
+		log.Println("[app] watcher init error:", err)
+	} else {
+		ws.OnAppsChanged = func() {
+			a.rebuildCache()
+		}
+		ws.OnIconChanged = func(newTheme string) {
+			log.Printf("[app] icon theme changed to %q, rebuilding cache", newTheme)
+			a.rebuildCache()
+			runtime.EventsEmit(a.ctx, "icon:changed", newTheme)
+		}
+		ws.Start()
+		a.watcher = ws
+	}
+
+	// runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
+	// 	runtime.WindowHide(a.ctx)
+	// })
+}
+
+func (a *App) shutdown(ctx context.Context) {
+	if a.watcher != nil {
+		a.watcher.Stop()
+	}
 }
 
 func (a *App) Search(query string) []models.SearchResult {
