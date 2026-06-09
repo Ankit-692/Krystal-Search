@@ -1,3 +1,14 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: scroll;
+    font-family: Arial, sans-serif;
+    pointer-events: auto;
+}
+
 #app {
     padding: 40px 60px;
     box-sizing: border-box;
@@ -6,47 +17,47 @@
 }
 
 .terminal-block {
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin: 8px 0;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 8px 0;
 }
 
 .terminal-prompt {
-  color: #4ec9b0;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  margin-bottom: 6px;
+    color: #4ec9b0;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    margin-bottom: 6px;
 }
 
 .terminal-output {
-  color: #d4d4d4;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  margin: 0;
+    color: #d4d4d4;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 0;
 }
 
 .terminal-error {
-  color: #f48771;
+    color: #f48771;
 }
 
 .sudo-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
 }
 
 #sudo-input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #d4d4d4;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  flex: 1;
-  caret-color: #d4d4d4;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #d4d4d4;
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    flex: 1;
+    caret-color: #d4d4d4;
 }

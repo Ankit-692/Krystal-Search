@@ -18,7 +18,11 @@ func BuildCache() []models.SearchResult {
 	paths := []string{
 		"/usr/share/applications",
 		filepath.Join(os.Getenv("HOME"), ".local/share/applications"),
+		"/var/lib/flatpak/exports/share/applications",
+		filepath.Join(os.Getenv("HOME"), ".local/share/flatpak/exports/share/applications"),
+		"/var/lib/snapd/desktop/applications",
 	}
+
 	for _, dir := range paths {
 		files, _ := os.ReadDir(dir)
 		for _, f := range files {

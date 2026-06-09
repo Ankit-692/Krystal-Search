@@ -1,7 +1,8 @@
-// Package services
 package utility
 
 import (
+	"bufio"
+	"changeme/internal/models"
 	"encoding/base64"
 	"os"
 	"os/exec"
@@ -9,116 +10,216 @@ import (
 	"strings"
 )
 
-var iconCategories = []string{"apps", "applications"}
-
 var iconBaseDirs = []string{
 	filepath.Join(os.Getenv("HOME"), ".local/share/icons"),
 	"/usr/local/share/icons",
 	"/usr/share/icons",
+	"/var/lib/icons",
 }
 
-type probe struct {
-	theme string
-	size  string
-	exts  []string
-}
+var sizes = []string{"scalable", "48x48", "48", "64x64", "64"}
+var extensions = []string{".png", ".svg"}
 
-var theme = getCurrentIconTheme()
-
-var probes = []probe{
-	{theme, "128x128", []string{".png", ".svg", ".xpm"}},
-	{"hicolor", "128x128", []string{".png", ".svg", ".xpm"}},
-	{theme, "scalable", []string{".svg"}},
-	{"hicolor", "scalable", []string{".svg"}},
-}
-
+// Get the current icon theme safely across different Desktop Environments
 func getCurrentIconTheme() string {
-	out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output()
-	if err != nil {
-		return "hicolor"
+	// 1. Try GNOME/Cinnamon/MATE (Ubuntu, Linux Mint)
+	if out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output(); err == nil {
+		theme := strings.Trim(strings.TrimSpace(string(out)), "'\"")
+		if theme != "" {
+			return theme
+		}
 	}
 
-	return strings.Trim(strings.TrimSpace(string(out)), "'")
+	// 2. Try XFCE fallback (Xubuntu)
+	if out, err := exec.Command("xfconf-query", "-c", "xsettings", "-p", "/Net/IconThemeName").Output(); err == nil {
+		theme := strings.TrimSpace(string(out))
+		if theme != "" {
+			return theme
+		}
+	}
+
+	// 3. Try KDE fallback (Kubuntu - reads from config file directly)
+	kdeConfig := filepath.Join(os.Getenv("HOME"), ".config", "kdeglobals")
+	if file, err := os.Open(kdeConfig); err == nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "Theme=") {
+				return strings.TrimSpace(strings.Split(line, "=")[1])
+			}
+		}
+	}
+
+	return "hicolor"
+}
+
+// Tracks theme inheritance recursively so we don't drop icons missing from the primary theme
+func getThemeFallbacks(theme string) []string {
+	themes := []string{theme}
+	current := theme
+
+	for i := 0; i < 3; i++ {
+		parent := parseInheritedTheme(current)
+		if parent == "" || parent == "hicolor" {
+			break
+		}
+		themes = append(themes, parent)
+		current = parent
+	}
+
+	if theme != "hicolor" {
+		themes = append(themes, "hicolor")
+	}
+	return themes
+}
+
+func parseInheritedTheme(theme string) string {
+	for _, base := range iconBaseDirs {
+		themePath := filepath.Join(base, theme, "index.theme")
+		file, err := os.Open(themePath)
+		if err != nil {
+			continue
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "Inherits=") {
+				val := strings.TrimSpace(strings.Split(line, "=")[1])
+				return strings.Split(val, ",")[0]
+			}
+		}
+	}
+	return ""
 }
 
 func ResolveIcon(iconName string) string {
+	defaultIcon := filepath.Join(os.Getenv("HOME"), models.Dir, "images", "app.png")
 	if iconName == "" {
-		return ""
+		return defaultIcon
 	}
 
-	for _, p := range probes {
+	if filepath.IsAbs(iconName) {
+		if _, err := os.Stat(iconName); err == nil {
+			return iconName
+		}
+		for _, ext := range extensions {
+			if _, err := os.Stat(iconName + ext); err == nil {
+				return iconName + ext
+			}
+		}
+	}
+
+	activeTheme := getCurrentIconTheme()
+	themesToSearch := getThemeFallbacks(activeTheme)
+	categories := []string{"apps", "applications"}
+
+	for _, theme := range themesToSearch {
 		for _, base := range iconBaseDirs {
-			for _, cat := range iconCategories {
-				dir := filepath.Join(base, p.theme, p.size, cat)
-				for _, ext := range p.exts {
-					candidate := filepath.Join(dir, iconName+ext)
-					if _, err := os.Stat(candidate); err == nil {
-						return candidate
+			for _, size := range sizes {
+				for _, cat := range categories {
+					// Variation 1: theme/size/category (e.g., Mint-L-Brown/128x128/apps)
+					candidate1 := filepath.Join(base, theme, size, cat)
+					// Variation 2: theme/category/size (e.g., Mint-L-Brown/apps/48)
+					candidate2 := filepath.Join(base, theme, cat, size)
+
+					for _, ext := range extensions {
+						if _, err := os.Stat(filepath.Join(candidate1, iconName+ext)); err == nil {
+							return filepath.Join(candidate1, iconName+ext)
+						}
+						if _, err := os.Stat(filepath.Join(candidate2, iconName+ext)); err == nil {
+							return filepath.Join(candidate2, iconName+ext)
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// If not found in standard directories, try to resolve from XDG icon cache
-	xdgIconCacheDir := "/var/lib/icons"
-	for _, p := range probes {
-		dir := filepath.Join(xdgIconCacheDir, "hicolor", p.size, "apps")
-		for _, ext := range p.exts {
-			candidate := filepath.Join(dir, iconName+ext)
-			if _, err := os.Stat(candidate); err == nil {
-				return candidate
-			}
+	pixmapDir := "/usr/share/pixmaps"
+	for _, ext := range extensions {
+		candidate := filepath.Join(pixmapDir, iconName+ext)
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
 		}
 	}
 
-	// Fallback to default icon if all else fails
-	defaultIconsDir := "/usr/share/icons/hicolor"
-	for _, p := range probes {
-		dir := filepath.Join(defaultIconsDir, p.size, "apps")
-		for _, ext := range p.exts {
-			candidate := filepath.Join(dir, iconName+ext)
-			if _, err := os.Stat(candidate); err == nil {
-				return candidate
-			}
-		}
-	}
-
-	return ""
+	return defaultIcon
 }
 
 func ResolveFolderIcon(iconName string) string {
-	iconCategories = []string{"places"}
-	for _, p := range probes {
+	defaultFolderIconPath := filepath.Join(os.Getenv("HOME"), models.Dir, "images", "folder.png")
+
+	if iconName == "" {
+		return defaultFolderIconPath
+	}
+
+	activeTheme := getCurrentIconTheme()
+	themesToSearch := getThemeFallbacks(activeTheme)
+	categories := []string{"places"}
+
+	for _, theme := range themesToSearch {
 		for _, base := range iconBaseDirs {
-			for _, cat := range iconCategories {
-				dir := filepath.Join(base, p.theme, p.size, cat)
-				for _, ext := range p.exts {
-					candidate := filepath.Join(dir, iconName+ext)
-					if _, err := os.Stat(candidate); err == nil {
-						return candidate
+			for _, size := range sizes {
+				for _, cat := range categories {
+					// Variation 1: theme/size/category
+					candidate1 := filepath.Join(base, theme, size, cat)
+					// Variation 2: theme/category/size (Matches your Mint-L-Brown/places/48 path)
+					candidate2 := filepath.Join(base, theme, cat, size)
+
+					for _, ext := range extensions {
+						if _, err := os.Stat(filepath.Join(candidate1, iconName+ext)); err == nil {
+							return filepath.Join(candidate1, iconName+ext)
+						}
+						if _, err := os.Stat(filepath.Join(candidate2, iconName+ext)); err == nil {
+							return filepath.Join(candidate2, iconName+ext)
+						}
 					}
 				}
 			}
 		}
 	}
 
-	return ""
+	return defaultFolderIconPath
 }
 
+// 3. Resolve File/Mimetype Icons (e.g., "text-plain", "application-pdf")
 func ResolveFileIcon(mimetype string) string {
-	for _, p := range probes {
+	defaultFileIconPath := filepath.Join(os.Getenv("HOME"), models.Dir, "images", "file.png")
+
+	if mimetype == "" {
+		return defaultFileIconPath
+	}
+
+	sanitizedMime := strings.ReplaceAll(mimetype, "/", "-")
+	activeTheme := getCurrentIconTheme()
+	themesToSearch := getThemeFallbacks(activeTheme)
+	categories := []string{"mimetypes"}
+
+	for _, theme := range themesToSearch {
 		for _, base := range iconBaseDirs {
-			dir := filepath.Join(base, p.theme, p.size, "mimetypes")
-			for _, ext := range p.exts {
-				candidate := filepath.Join(dir, mimetype+ext)
-				if _, err := os.Stat(candidate); err == nil {
-					return candidate
+			for _, size := range sizes {
+				for _, cat := range categories {
+					// Variation 1: theme/size/category
+					candidate1 := filepath.Join(base, theme, size, cat)
+					// Variation 2: theme/category/size
+					candidate2 := filepath.Join(base, theme, cat, size)
+
+					for _, ext := range extensions {
+						if _, err := os.Stat(filepath.Join(candidate1, sanitizedMime+ext)); err == nil {
+							return filepath.Join(candidate1, sanitizedMime+ext)
+						}
+						if _, err := os.Stat(filepath.Join(candidate2, sanitizedMime+ext)); err == nil {
+							return filepath.Join(candidate2, sanitizedMime+ext)
+						}
+					}
 				}
 			}
 		}
 	}
-	return ""
+	return defaultFileIconPath
 }
 
 func IconToDataURL(iconPath string) string {
@@ -138,8 +239,6 @@ func IconToDataURL(iconPath string) string {
 		mime = "image/png"
 	case ".svg":
 		mime = "image/svg+xml"
-	case ".xpm":
-		return ""
 	default:
 		return ""
 	}

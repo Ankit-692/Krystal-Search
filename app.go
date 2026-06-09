@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"embed"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"changeme/internal/models"
@@ -13,14 +17,17 @@ import (
 )
 
 type App struct {
-	ctx      context.Context
-	visible  bool
-	AppCache []models.SearchResult
-	watcher  *services.WatcherService
+	ctx            context.Context
+	visible        bool
+	AppCache       []models.SearchResult
+	watcher        *services.WatcherService
+	frontendAssets embed.FS
 }
 
-func NewApp() *App {
-	return &App{}
+func NewApp(assets embed.FS) *App {
+	return &App{
+		frontendAssets: assets,
+	}
 }
 
 func (a *App) loadCache() error {
@@ -38,11 +45,53 @@ func (a *App) rebuildCache() {
 	runtime.EventsEmit(a.ctx, "cache:updated")
 }
 
+func (a *App) initializeLocalFolder() error {
+	targetDir := filepath.Join(os.Getenv("HOME"), models.Dir, "images")
+
+	err := os.MkdirAll(targetDir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	images := []string{"app.png", "file.png", "folder.png"}
+
+	for _, filename := range images {
+		destinationPath := filepath.Join(targetDir, filename)
+		if _, err := os.Stat(destinationPath); err == nil {
+			continue
+		}
+
+		var imageBytes []byte
+
+		embeddedPath := filepath.Join("frontend", "dist", "assets", "images", filename)
+
+		imageBytes, err = a.frontendAssets.ReadFile(embeddedPath)
+		if err != nil {
+			devPath := filepath.Join("frontend", "src", "assets", "images", filename)
+			imageBytes, err = os.ReadFile(devPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		err = os.WriteFile(destinationPath, imageBytes, 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	err := a.loadCache()
 	if err != nil {
 		println(err.Error())
+	}
+
+	err = a.initializeLocalFolder()
+	if err != nil {
+		fmt.Printf("Error initializing assets: %v\n", err)
 	}
 
 	ws, err := services.NewWatcherService()

@@ -68,10 +68,12 @@ func FileSearch(query string) []models.FileEntry {
 		}
 		mimeType := strings.ReplaceAll(mime.TypeByExtension(filepath.Ext(base)), "/", "-")
 		iconType := map[bool]string{true: "folder", false: mimeType}[info.IsDir()]
+		iconPath := ""
 		if iconType != "folder" {
-			iconType = utility.ResolveFileIcon(mimeType)
+			iconPath = utility.ResolveFileIcon(mimeType)
+		} else {
+			iconPath = utility.ResolveFolderIcon(iconType)
 		}
-		iconPath := utility.ResolveFolderIcon(iconType)
 		results = append(results, models.FileEntry{
 			Name:  filepath.Base(path),
 			Path:  path,
