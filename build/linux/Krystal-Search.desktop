@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Krystal-Search
+Comment=v0.1
+Exec=/usr/bin/Krystal-Search
+Icon=Krystal-Search-Icon
+Terminal=false
+Categories=Utility;Development;

@@ -94,7 +94,6 @@ func (ws *WatcherService) watchGTKSettingsDirs() {
 func (ws *WatcherService) listenFSEvents() {
 	appDebounce := newDebouncer(300 * time.Millisecond)
 
-	// Snapshot of icon theme per GTK file so we only fire on real changes
 	iconSnap := make(map[string]string)
 	for _, f := range gtkSettingsFiles {
 		iconSnap[f] = readIconThemeFromGTKFile(f)
@@ -173,9 +172,8 @@ func queryGSettingsTheme() string {
 	out, err := exec.Command("gsettings", "get",
 		"org.gnome.desktop.interface", "icon-theme").Output()
 	if err != nil {
-		return "" // gsettings not available (KDE-only system, etc.)
+		return ""
 	}
-	// Output looks like: 'Papirus-Dark'\n
 	return strings.Trim(strings.TrimSpace(string(out)), "'")
 }
 

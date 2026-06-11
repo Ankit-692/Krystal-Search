@@ -12,5 +12,3 @@ export function OnSecondInstance(arg1:options.SecondInstanceData):Promise<void>;
 export function RunCommand(arg1:string,arg2:string):Promise<string>;
 
 export function Search(arg1:string):Promise<Array<models.SearchResult>>;
-
-export function ToggleWindow():Promise<void>;

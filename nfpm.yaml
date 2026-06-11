@@ -1,0 +1,23 @@
+name: "Krystal-Search"
+arch: "amd64"
+platform: "linux"
+version: "0.1.0"
+section: "default"
+priority: "extra"
+maintainer: "Ankit Bharti"
+description: "Wails Utility Application"
+homepage: "https://github.com/Ankit-692/Krystal-Search"
+license: "MIT"
+
+depends:
+  - libgtk-3-0
+  - libwebkit2gtk-4.1-0
+  - wmctrl
+
+contents:
+  - src: ./build/bin/Krystal-Search
+    dst: /usr/bin/Krystal-Search
+  - src: ./build/linux/Krystal-Search.desktop
+    dst: /usr/share/applications/Krystal-Search.desktop
+  - src: ./build/appicon.png
+    dst: /usr/share/icons/hicolor/256x256/apps/Krystal-Search-Icon.png

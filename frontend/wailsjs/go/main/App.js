@@ -21,7 +21,3 @@ export function RunCommand(arg1, arg2) {
 export function Search(arg1) {
   return window['go']['main']['App']['Search'](arg1);
 }
-
-export function ToggleWindow() {
-  return window['go']['main']['App']['ToggleWindow']();
-}

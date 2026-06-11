@@ -20,7 +20,6 @@ var iconBaseDirs = []string{
 var sizes = []string{"scalable", "48x48", "48", "64x64", "64"}
 var extensions = []string{".png", ".svg"}
 
-// Get the current icon theme safely across different Desktop Environments
 func getCurrentIconTheme() string {
 	// 1. Try GNOME/Cinnamon/MATE (Ubuntu, Linux Mint)
 	if out, err := exec.Command("gsettings", "get", "org.gnome.desktop.interface", "icon-theme").Output(); err == nil {
@@ -120,9 +119,7 @@ func ResolveIcon(iconName string) string {
 		for _, base := range iconBaseDirs {
 			for _, size := range sizes {
 				for _, cat := range categories {
-					// Variation 1: theme/size/category (e.g., Mint-L-Brown/128x128/apps)
 					candidate1 := filepath.Join(base, theme, size, cat)
-					// Variation 2: theme/category/size (e.g., Mint-L-Brown/apps/48)
 					candidate2 := filepath.Join(base, theme, cat, size)
 
 					for _, ext := range extensions {
@@ -164,9 +161,7 @@ func ResolveFolderIcon(iconName string) string {
 		for _, base := range iconBaseDirs {
 			for _, size := range sizes {
 				for _, cat := range categories {
-					// Variation 1: theme/size/category
 					candidate1 := filepath.Join(base, theme, size, cat)
-					// Variation 2: theme/category/size (Matches your Mint-L-Brown/places/48 path)
 					candidate2 := filepath.Join(base, theme, cat, size)
 
 					for _, ext := range extensions {
@@ -185,7 +180,6 @@ func ResolveFolderIcon(iconName string) string {
 	return defaultFolderIconPath
 }
 
-// 3. Resolve File/Mimetype Icons (e.g., "text-plain", "application-pdf")
 func ResolveFileIcon(mimetype string) string {
 	defaultFileIconPath := filepath.Join(os.Getenv("HOME"), models.Dir, "images", "file.png")
 
@@ -202,9 +196,7 @@ func ResolveFileIcon(mimetype string) string {
 		for _, base := range iconBaseDirs {
 			for _, size := range sizes {
 				for _, cat := range categories {
-					// Variation 1: theme/size/category
 					candidate1 := filepath.Join(base, theme, size, cat)
-					// Variation 2: theme/category/size
 					candidate2 := filepath.Join(base, theme, cat, size)
 
 					for _, ext := range extensions {

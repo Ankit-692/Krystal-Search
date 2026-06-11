@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"changeme/internal/models"
 	"changeme/internal/services"
@@ -18,7 +20,6 @@ import (
 
 type App struct {
 	ctx            context.Context
-	visible        bool
 	AppCache       []models.SearchResult
 	watcher        *services.WatcherService
 	frontendAssets embed.FS
@@ -110,9 +111,9 @@ func (a *App) startup(ctx context.Context) {
 		a.watcher = ws
 	}
 
-	// runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
-	// 	runtime.WindowHide(a.ctx)
-	// })
+	runtime.EventsOn(a.ctx, "wails:window-blur", func(optionalData ...interface{}) {
+		runtime.WindowHide(a.ctx)
+	})
 }
 
 func (a *App) shutdown(ctx context.Context) {
@@ -141,18 +142,18 @@ func (a *App) RunCommand(command string, password string) string {
 }
 
 func (a *App) OnSecondInstance(secondInstanceData options.SecondInstanceData) {
-	a.ToggleWindow()
+	a.showWindow()
 }
 
-func (a *App) ToggleWindow() {
-	if a.visible {
-		runtime.WindowHide(a.ctx)
-		a.visible = false
-	} else {
-		runtime.WindowSetAlwaysOnTop(a.ctx, true)
-		runtime.WindowCenter(a.ctx)
-		runtime.WindowShow(a.ctx)
+func (a *App) showWindow() {
+	runtime.WindowSetAlwaysOnTop(a.ctx, true)
+	runtime.WindowCenter(a.ctx)
+	runtime.WindowShow(a.ctx)
+
+	go func() {
+		time.Sleep(150 * time.Millisecond)
+		_ = exec.Command("wmctrl", "-a", "Krystal-Search").Run()
+		time.Sleep(50 * time.Millisecond)
 		runtime.EventsEmit(a.ctx, "focus-search")
-		a.visible = true
-	}
+	}()
 }

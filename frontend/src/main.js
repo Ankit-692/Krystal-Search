@@ -110,12 +110,18 @@ input.addEventListener("keydown", async (e) => {
     const target =
       selectedIndex >= 0 ? items[selectedIndex] : resultsArea.firstElementChild;
     LaunchApp(target);
+    input.value = "";
+    resultsArea.innerHTML = "";
   }
 });
 
-window.runtime.EventsOn("focus_search", () => {
-  input.focus();
-  input.select();
+window.runtime.EventsOn("focus-search", () => {
+  setTimeout(() => {
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }, 150);
 });
 
 function LaunchApp(item) {
@@ -129,16 +135,16 @@ function LaunchApp(item) {
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     window.runtime.WindowHide();
-    input.innerHTML = "";
+    input.value = "";
     resultsArea.innerHTML = "";
   }
 });
 
-// window.onblur = () => {
-//   window.runtime.WindowHide();
-//   input.innerHTML = '';
-//   resultsArea.innerHTML = '';
-// };
+window.onblur = () => {
+  window.runtime.WindowHide();
+  input.value = "";
+  resultsArea.innerHTML = "";
+};
 
 function escapeHtml(str) {
   if (!str) return "";
